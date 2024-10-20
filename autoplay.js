@@ -3,15 +3,15 @@ export async function main(ns) {
   ns.disableLog("ALL");
   ns.tail();
 
-  var target = getTarget(ns);
   var home = ns.getHostname();
+  var target = getTarget(ns,home);
   var minSecurity = ns.getServerMinSecurityLevel(target);
   var maxMoney = ns.getServerMaxMoney(target);
+  var script = "swarm.js";
 
   ns.killall(home);
-
-  getRoot(ns);
-  runDeploy(ns);
+  getRoot(ns,home);
+  runDeploy(ns,home,script);
 
   ns.print("Attacking " + target + " with swarm");
   
@@ -32,7 +32,7 @@ export async function main(ns) {
 }
 
 async function pauseAfterScript(ns,script,home,target) {
-  var threads = Math.floor((ns.getServerMaxRam(home)-ns.getServerUsedRam(home))/ns.getScriptRam(script))-4;
+  var threads = Math.floor((ns.getServerMaxRam(home)-ns.getServerUsedRam(home))/ns.getScriptRam(script))-10;
   if (threads > 0) {
     ns.exec(script,home,threads,target);
     while (ns.scriptRunning(script,home)) {
@@ -41,16 +41,16 @@ async function pauseAfterScript(ns,script,home,target) {
   }
 }
 
-export function getList(ns) {
-  let hosts = new Set(["home"]);
+export function getList(ns,home) {
+  let hosts = new Set([home]);
   hosts.forEach(h => (ns.scan(h).forEach(n => hosts.add(n))));
   return Array.from(hosts);
 }
 
-export function getTarget(ns) {
+export function getTarget(ns,home) {
   var score = 0;
   var target = "";
-  var servers = getList(ns);
+  var servers = getList(ns,home);
   for (let server of servers) {
     if (ns.hasRootAccess(server)) {
       var chance = ns.getServerMaxMoney(server)/ns.getWeakenTime(server)*ns.hackAnalyzeChance(server);
@@ -63,46 +63,38 @@ export function getTarget(ns) {
   return target;
 }
 
-export function runDeploy(ns) {
-  var servers = getList(ns);
-  var target = getTarget(ns);
+export function runDeploy(ns,home,script) {
+  var servers = getList(ns,home);
+  var target = getTarget(ns,home);
   for (let server of servers) {
-    if (server!="home") {
+    if (server!=home) {
       ns.killall(server);
-      ns.scp("swarm.js", server, "home");
-      var threads = Math.floor(ns.getServerMaxRam(server)/ns.getScriptRam("swarm.js"));
-        if (threads>=1 && ns.hasRootAccess(server)) {
-          ns.exec("swarm.js", server, threads, target,ns.getServerMinSecurityLevel(target),ns.getServerMaxMoney(target));
-        }
+      ns.scp(script, server, home);
+      var threads = Math.floor(ns.getServerMaxRam(server)/ns.getScriptRam(script));
+      if (threads>=1 && ns.hasRootAccess(server)) {
+        ns.exec(script, server, threads, target,ns.getServerMinSecurityLevel(target),ns.getServerMaxMoney(target));
+      }
     }
   }
 }
 
-export function getRoot(ns) {
-  var targets = getList(ns);
+export function getRoot(ns,home) {
+  var targets = getList(ns,home);
   for (let i = 0; i < targets.length; i++) {
     var target = targets[i];
     if (ns.hasRootAccess(target) == false) {
-      if (ns.getHackingLevel() >= ns.getServer(target)["requiredHackingSkill"]) {
-        if (ns.getServer(target)["numOpenPortsRequired"] > ns.getServer(target)["openPortCount"]) {
-          if (ns.fileExists('BruteSSH.exe')) {
+      if (ns.getHackingLevel() >= ns.requiredHackingSkill(target)) {
+        if (ns.numOpenPortsRequired(target) > ns.openPortCount(target)) {
+          try {
             ns.brutessh(target);
-          }
-          if (ns.fileExists('FTPCrack.exe')) {
             ns.ftpcrack(target);
-          }
-          if (ns.fileExists('relaySMTP.exe')) {
             ns.relaysmtp(target);
-          } 
-          if (ns.fileExists('HTTPWorm.exe')) {
             ns.httpworm(target);
-          }
-          if (ns.fileExists('SQLInject.exe')) {
             ns.sqlinject(target);
+            ns.nuke(target);
+          } catch(Error) {
+            ns.print("Error: " + Error + " hacking " + target);
           }
-        }
-        if (ns.getServer(target)["openPortCount"] >= ns.getServer(target)["numOpenPortsRequired"]) {
-          ns.nuke(target);
         }
       }
     }
