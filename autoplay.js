@@ -1,20 +1,19 @@
 /** @param {NS} ns */
 export async function main(ns) {
   ns.disableLog("ALL");
+  ns.killall(home);
   ns.tail();
-
   var home = ns.getHostname();
+  getRoot(ns,home);
   var target = getTarget(ns,home);
+  ns.tprint("target = " + target);
+  var script = "swarm.js";
   var minSecurity = ns.getServerMinSecurityLevel(target);
   var maxMoney = ns.getServerMaxMoney(target);
-  var script = "swarm.js";
-
-  ns.killall(home);
-  getRoot(ns,home);
   runDeploy(ns,home,script);
 
   ns.print("Attacking " + target + " with swarm");
-  
+
   while (true) {
     if (ns.getServerSecurityLevel(target) > minSecurity + 5) {
       await pauseAfterScript(ns,"weak.js",home,target);
@@ -48,11 +47,11 @@ export function getList(ns,home) {
 }
 
 export function getTarget(ns,home) {
+  var servers = getList(ns,home);
   var score = 0;
   var target = "";
-  var servers = getList(ns,home);
   for (let server of servers) {
-    if (ns.hasRootAccess(server)) {
+    if (ns.hasRootAccess(server) && ns.getServerMaxRam(server) > 0 && server!=home) {
       var chance = ns.getServerMaxMoney(server)/ns.getWeakenTime(server)*ns.hackAnalyzeChance(server);
       if (score < chance) {
         score = chance;
@@ -80,21 +79,28 @@ export function runDeploy(ns,home,script) {
 
 export function getRoot(ns,home) {
   var targets = getList(ns,home);
-  for (let i = 0; i < targets.length; i++) {
-    var target = targets[i];
-    if (ns.hasRootAccess(target) == false) {
-      if (ns.getHackingLevel() >= ns.requiredHackingSkill(target)) {
-        if (ns.numOpenPortsRequired(target) > ns.openPortCount(target)) {
-          try {
+  for (let target of targets) {
+    if (!ns.hasRootAccess(target) && ns.getServerMaxRam(target) > 0 && target!=home) {
+      if (ns.getHackingLevel() >= ns.getServer(target)["requiredHackingSkill"]) {
+        if (ns.getServer(target)["numOpenPortsRequired"] > ns.getServer(target)["openPortCount"]) {
+          if (ns.fileExists('BruteSSH.exe')) {
             ns.brutessh(target);
-            ns.ftpcrack(target);
-            ns.relaysmtp(target);
-            ns.httpworm(target);
-            ns.sqlinject(target);
-            ns.nuke(target);
-          } catch(Error) {
-            ns.print("Error: " + Error + " hacking " + target);
           }
+          if (ns.fileExists('FTPCrack.exe')) {
+            ns.ftpcrack(target);
+          }
+          if (ns.fileExists('relaySMTP.exe')) {
+            ns.relaysmtp(target);
+          } 
+          if (ns.fileExists('HTTPWorm.exe')) {
+            ns.httpworm(target);
+          }
+          if (ns.fileExists('SQLInject.exe')) {
+            ns.sqlinject(target);
+          }
+        }
+        if (ns.getServer(target)["openPortCount"] >= ns.getServer(target)["numOpenPortsRequired"]) {
+          ns.nuke(target);
         }
       }
     }
