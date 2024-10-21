@@ -5,12 +5,17 @@ export async function main(ns) {
   ns.tail();
   var home = ns.getHostname();
   getRoot(ns,home);
-  var target = getTarget(ns,home);
+  if (ns.args[0]==null) {
+    var target = getTarget(ns,home);
+  } else {
+    var target = ns.args[0];
+  }
+  
   ns.tprint("target = " + target);
   var script = "swarm.js";
   var minSecurity = ns.getServerMinSecurityLevel(target);
   var maxMoney = ns.getServerMaxMoney(target);
-  runDeploy(ns,home,script);
+  runDeploy(ns,home,script,target);
 
   ns.print("Attacking " + target + " with swarm");
 
@@ -31,7 +36,7 @@ export async function main(ns) {
 }
 
 async function pauseAfterScript(ns,script,home,target) {
-  var threads = Math.floor((ns.getServerMaxRam(home)-ns.getServerUsedRam(home))/ns.getScriptRam(script))-10;
+  var threads = Math.floor((ns.getServerMaxRam(home)-ns.getServerUsedRam(home))/ns.getScriptRam(script));
   if (threads > 0) {
     ns.exec(script,home,threads,target);
     while (ns.scriptRunning(script,home)) {
@@ -62,9 +67,9 @@ export function getTarget(ns,home) {
   return target;
 }
 
-export function runDeploy(ns,home,script) {
+export function runDeploy(ns,home,script,target) {
   var servers = getList(ns,home);
-  var target = getTarget(ns,home);
+  // var target = getTarget(ns,home);
   for (let server of servers) {
     if (server!=home) {
       ns.killall(server);
