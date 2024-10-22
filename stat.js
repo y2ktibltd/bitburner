@@ -1,10 +1,11 @@
-import {list} from "list.js"
 /** @param {NS} ns */
 export async function main(ns) {
-  if (ns.args[0]!=null) {
+  if (ns.args[0]=="ALL") {
+    var targets = [await ns.prompt("What server do you want to view?",{type: "select", choices: getList(ns)})];
+  } else if (ns.args[0]!=null) {
     var targets = [ns.args[0]];
   } else {
-    var targets = list(ns);
+    var targets = getList(ns);
   }
   var servers = [];
   for (let target of targets) {
@@ -36,4 +37,10 @@ export async function main(ns) {
     ns.tprint("");
   }
   ns.tprint("Total number of servers with root access and money avail: " + servers.length);
+}
+
+export function getList(ns) {
+  let hosts = new Set(["home"]);
+  hosts.forEach(h => (ns.scan(h).forEach(n => hosts.add(n))));
+  return Array.from(hosts);
 }
