@@ -34,28 +34,40 @@ export async function main(ns) {
         ns.print(ns.readPort(69420));
       }
     }
+    await ns.sleep(10);
   }
 }
 //WIP
 async function runScripts(ns, script, home, target) {
+    var threads = Math.floor((ns.getServerMaxRam(home) - ns.getServerUsedRam(home)) / ns.getScriptRam(script));
   switch (script) {
     case "hack.js": {
-      var threads = Math.floor(ns.hackAnalyzeThreads(target, ns.getServerMoneyAvailable(target) * 0.1));
+      var hckThreads = Math.floor(ns.hackAnalyzeThreads(target, ns.getServerMoneyAvailable(target) * 0.1));
+      // ns.print("requested threads:" + hckThreads + " /" + threads +" available");
+      if (hckThreads < threads) {
+        threads = hckThreads;
+      } else if (hckThreads < 0) {
+        threads = 1;
+      }
       break;
     }
     case "grow.js": {
       var grwThreads = Math.floor(ns.growthAnalyze(target, 100 - ((ns.getServerMoneyAvailable(target) / ns.getServerMaxMoney(target)) * 100), ns.getServer(home)["cpuCores"]));
+      // ns.print("requested threads:" + grwThreads + " /" + threads +" available");
       if (grwThreads < threads) {
-        var threads = grwThreads;
+        threads = grwThreads;
+      } else if (grwThreads < 0) {
+        threads = 1;
       }
       break;
     }
     case "weak.js": {
       var wkThreads = Math.floor((ns.getServerSecurityLevel(target) - ns.getServerMinSecurityLevel(target)) / ns.weakenAnalyze(1, ns.getServer(home)["cpuCores"]));;
+      // ns.print("requested threads:" + wkThreads + " /" + threads +" available");
       if (wkThreads < threads) {
-        var threads = wkThreads;
+        threads = wkThreads;
       } else if (wkThreads < 0) {
-        var threads = 1;
+        threads = 1;
       }
       break;
     }
