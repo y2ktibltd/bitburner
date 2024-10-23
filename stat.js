@@ -1,5 +1,6 @@
 /** @param {NS} ns */
 export async function main(ns) {
+  ns.ui.clearTerminal();
   if (ns.args[0]=="ALL") {
     var targets = [await ns.prompt("What server do you want to view?",{type: "select", choices: getList(ns)})];
   } else if (ns.args[0]!=null) {
@@ -9,7 +10,7 @@ export async function main(ns) {
   }
   var servers = [];
   for (let target of targets) {
-    if (ns.hasRootAccess(target) && ns.getServerMaxMoney(target)>0) {
+    if (ns.hasRootAccess(target)) {
       servers.push(ns.getServer(target));
     }
   }
