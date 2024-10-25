@@ -7,39 +7,50 @@ export async function main(ns) {
   getRoot(ns, home);
 
   if (ns.args[0] == null) {
-    var target = getTarget(ns, home);
+    var numberTargets = 3;
+    var targets = getTargets(ns, home, numberTargets);
+  } else if (ns.args[0]=="ALL") {
+    var numberTargets = ns.args[1];
+    var targets = getTargets(ns, home, numberTargets);
+  } else if (ns.args[0]!=null && ns.args[1]==null) {
+    var targets = [ns.args[0]];
   } else {
-    var target = ns.args[0];
+    ns.tprint("improper use of arguments!")
+    ns.exit();
   }
 
   var script = "swarm.js";
-  var minSecurity = ns.getServerMinSecurityLevel(target);
-  var maxMoney = ns.getServerMaxMoney(target);
-  runDeploy(ns, home, script, target);
-  ns.print("Attacking " + target + " with swarm");
+  runDeploy(ns, home, script, targets[0]);
+
+  ns.print("Attacking " + targets + " with swarm");
 
   while (true) {
-    var freeRam = Math.floor(ns.getServerMaxRam(home) - ns.getServerUsedRam(home));
-    if (freeRam > 0) {
-      if (ns.getServerSecurityLevel(target) > minSecurity + 5) {
-        await runScripts(ns, "weak.js", home, target);
+    for (let target of targets) {
+      var minSecurity = ns.getServerMinSecurityLevel(target);
+      var maxMoney = ns.getServerMaxMoney(target);
+      var freeRam = Math.floor(ns.getServerMaxRam(home) - ns.getServerUsedRam(home));
+      if (freeRam > 0) {
+        if (ns.getServerSecurityLevel(target) > minSecurity + 5) {
+          await runScripts(ns, "weak.js", home, target);
+        }
+        else if (ns.getServerMoneyAvailable(target) < maxMoney * 0.9) {
+          await runScripts(ns, "grow.js", home, target);
+        }
+        else {
+          await runScripts(ns, "hack.js", home, target);
+        }
+        while (ns.peek(69420) != "NULL PORT DATA") {
+          ns.print(ns.readPort(69420));
+        }
       }
-      else if (ns.getServerMoneyAvailable(target) < maxMoney * 0.9) {
-        await runScripts(ns, "grow.js", home, target);
-      }
-      else {
-        await runScripts(ns, "hack.js", home, target);
-      }
-      while (ns.peek(69420) != "NULL PORT DATA") {
-        ns.print(ns.readPort(69420));
-      }
+      await ns.sleep(10);
     }
-    await ns.sleep(10);
+    ns.tail
   }
 }
 
 async function runScripts(ns, script, home, target) {
-    var maxThreads = Math.floor((ns.getServerMaxRam(home) - ns.getServerUsedRam(home)) / ns.getScriptRam(script));
+  var maxThreads = Math.floor((ns.getServerMaxRam(home) - ns.getServerUsedRam(home)) / ns.getScriptRam(script));
   switch (script) {
     case "hack.js": {
       var scrptThreads = Math.floor(ns.hackAnalyzeThreads(target, ns.getServerMoneyAvailable(target) * 0.1));
@@ -59,14 +70,13 @@ async function runScripts(ns, script, home, target) {
   } else if (scrptThreads <= 0) {
     scrptThreads = 1;
   }
-  if (!ns.scriptRunning(script, home)) {
-    ns.print("Running " + script + " with " + scrptThreads + "/" + maxThreads + " threads");
+  if (!ns.isRunning(script, home, target)) {
+    ns.print("Running " + script + " with " + scrptThreads + "/" + maxThreads + " threads against " + target);
     ns.exec(script, home, scrptThreads, target);
   } else {
     await ns.sleep(10);
   }
 }
-
 
 async function pauseAfterScript(ns, script, home, target) {
   var threads = Math.floor((ns.getServerMaxRam(home) - ns.getServerUsedRam(home)) / ns.getScriptRam(script));
@@ -82,20 +92,18 @@ export function getList(ns, home) {
   return Array.from(hosts);
 }
 
-export function getTarget(ns, home) {
+export function getTargets(ns, home, numberTargets) {
   var servers = getList(ns, home);
-  var score = 0;
-  var target = "";
+  var targets = [];
   for (let server of servers) {
-    if (ns.hasRootAccess(server) && ns.getServerMaxRam(server) > 0 && server != home) {
-      var chance = ns.getServerMaxMoney(server) / ns.getWeakenTime(server) * ns.hackAnalyzeChance(server);
-      if (score < chance) {
-        score = chance;
-        target = server;
-      }
+    if (ns.hasRootAccess(server) && server != home && ns.getServerMaxMoney(server) > 0) {
+      var score = Math.floor(ns.getServerMaxMoney(server) / ns.getWeakenTime(server) * ns.hackAnalyzeChance(server));
+      targets.push({ server, score });
     }
   }
-  return target;
+  targets.sort((a, b) => a.score - b.score);
+  targets = targets.slice(-numberTargets).map(name => name.server);
+  return targets;
 }
 
 export function runDeploy(ns, home, script, target) {
@@ -116,14 +124,12 @@ export function getRoot(ns, home) {
   var targets = getList(ns, home);
   for (let target of targets) {
     if (!ns.hasRootAccess(target) && (ns.getHackingLevel() >= ns.getServer(target)["requiredHackingSkill"]) && target != home) {
-      try {
-        ns.brutessh(target);
-        ns.ftpcrack(target);
-        ns.relaysmtp(target);
-        ns.httpworm(target);
-        ns.sqlinject(target);
-        ns.nuke(target);
-      } catch (Error) { }
+      try { ns.brutessh(target); } catch (Error) { }
+      try { ns.ftpcrack(target); } catch (Error) { }
+      try { ns.relaysmtp(target); } catch (Error) { }
+      try { ns.httpworm(target); } catch (Error) { }
+      try { ns.sqlinject(target); } catch (Error) { }
+      try { ns.nuke(target); } catch (Error) { }
     }
   }
 }
