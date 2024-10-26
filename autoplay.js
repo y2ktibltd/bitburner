@@ -67,8 +67,10 @@ async function runScripts(ns, script, home, target) {
   }
   if (scrptThreads > maxThreads) {
     scrptThreads = maxThreads;
-  } else if (scrptThreads <= 0) {
-    scrptThreads = 1;
+  } 
+  if (scrptThreads <= 0) {
+    await ns.sleep(10);
+    return;
   }
   if (!ns.isRunning(script, home, target)) {
     ns.print("Running " + script + " with " + scrptThreads + "/" + maxThreads + " threads against " + target);
