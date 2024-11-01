@@ -31,13 +31,13 @@ export async function main(ns) {
       var freeRam = Math.floor(ns.getServerMaxRam(home) - ns.getServerUsedRam(home));
       if (freeRam > 0) {
         if (ns.getServerSecurityLevel(target) > minSecurity + 5) {
-          await runScripts(ns, "weak.js", home, target, autokill);
+          runScripts(ns, "weak.js", home, target, autokill);
         }
         else if (ns.getServerMoneyAvailable(target) < maxMoney * 0.9) {
-          await runScripts(ns, "grow.js", home, target, autokill);
+          runScripts(ns, "grow.js", home, target, autokill);
         }
         else {
-          await runScripts(ns, "hack.js", home, target, autokill);
+          runScripts(ns, "hack.js", home, target, autokill);
         }
         while (ns.peek(69420) != "NULL PORT DATA") {
           ns.print(ns.readPort(69420));
@@ -49,7 +49,7 @@ export async function main(ns) {
   }
 }
 
-async function runScripts(ns, script, home, target, autokill) {
+function runScripts(ns, script, home, target, autokill) {
   var maxThreads = Math.floor((ns.getServerMaxRam(home) - ns.getServerUsedRam(home)) / ns.getScriptRam(script));
   switch (script) {
     case "hack.js": {
@@ -69,14 +69,11 @@ async function runScripts(ns, script, home, target, autokill) {
     scrptThreads = maxThreads;
   }
   if (scrptThreads <= 0) {
-    await ns.sleep(10);
     return;
   }
   if (!ns.isRunning(script, home, target)) {
     ns.print("Running " + script + " with " + scrptThreads + "/" + maxThreads + " threads against " + target);
     ns.exec(script, home, scrptThreads, target);
-  } else {
-    await ns.sleep(10);
   }
 }
 
