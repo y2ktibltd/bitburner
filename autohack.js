@@ -21,7 +21,7 @@ export async function main(ns) {
     ns.exit();
   }
 
-  runDeploy(ns, home, "swarm.js", targets[0]);
+  runDeploy(ns, home, "swarm.js", targets[targets.length-1]);
   ns.print("Attacking " + targets + " with swarm");
     
   while (true) {
