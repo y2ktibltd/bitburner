@@ -2,6 +2,7 @@
 export async function main(ns) {
   ns.disableLog("ALL");
   ns.killall(home);
+  ns.clearPort(69420);
   ns.tail();
   var home = ns.getHostname();
   getRoot(ns, home);
@@ -40,7 +41,10 @@ export async function main(ns) {
           await runScripts(ns, "hack.js", home, target, autokill);
         }
         while (ns.peek(69420) != "NULL PORT DATA") {
-          ns.print(ns.readPort(69420));
+          var logs = ns.readPort(69420);
+          for (let log of logs) {
+            ns.print(log);
+          }
         }
       }
       await ns.sleep(10);
@@ -144,24 +148,21 @@ var weakScript = "\
 /** @param {NS} ns */\n\
 export async function main(ns) {\n\
   await ns.weaken(ns.args[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[1]);\n\
+  ns.writePort(69420,ns.getScriptLogs());\n\
 }";
 
 var hackScript = "\
 /** @param {NS} ns */\n\
 export async function main(ns) {\n\
   await ns.hack(ns.args[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[1]);\n\
+  ns.writePort(69420,ns.getScriptLogs());\n\
 }";
 
 var growScript = "\
 /** @param {NS} ns */\n\
 export async function main(ns) {\n\
   await ns.grow(ns.args[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[0]);\n\
-  ns.writePort(69420,ns.getScriptLogs()[1]);\n\
+  ns.writePort(69420,ns.getScriptLogs());\n\
 }";
 
 var swarmScript = "\
