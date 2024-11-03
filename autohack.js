@@ -12,7 +12,11 @@ export async function main(ns) {
     var numberTargets = 3;
     var targets = getTargets(ns, home, numberTargets);
   } else if (ns.args[0] == "ALL") {
-    var numberTargets = ns.args[1];
+    if (ns.args[1]==null) {
+      var numberTargets = 99;  
+    } else {
+      var numberTargets = ns.args[1];
+    }
     var targets = getTargets(ns, home, numberTargets);
   } else if (ns.args[0] != null && ns.args[1] == null) {
     var targets = [ns.args[0]];
